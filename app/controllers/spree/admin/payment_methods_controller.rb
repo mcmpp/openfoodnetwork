@@ -131,6 +131,9 @@ module Spree
         unless show_stripe?
           providers.reject! { |provider| stripe_provider?(provider) }
         end
+        unless show_twint?
+          providers.reject! { |provider| twint_provider?(provider) }
+        end
 
         providers
       end
@@ -140,6 +143,12 @@ module Spree
       def show_stripe?
         Spree::Config.stripe_connect_enabled ||
           stripe_payment_method?
+      end
+
+      def show_twint?
+        (Spree::Config.stripe_connect_enabled &&
+          ENV['CURRENCY'] == "CHF") ||
+          twint_payment_method?
       end
 
       def restrict_stripe_account_change
@@ -159,6 +168,14 @@ module Spree
 
       def stripe_provider?(provider)
         provider.name.ends_with?("StripeSCA")
+      end
+
+      def twint_payment_method?
+        @payment_method.try(:type) == "Spree::Gateway::Twint"
+      end
+
+      def twint_provider?(provider)
+        provider.name.ends_with?("Twint")
       end
 
       def base_params

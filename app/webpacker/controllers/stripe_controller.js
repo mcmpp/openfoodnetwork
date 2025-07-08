@@ -22,7 +22,10 @@ export default class extends Controller {
   };
 
   initialize() {
-    this.parentForm = this.pmIdTarget.form;
+    if (!this.stripeSelected() || this.initialized) return;
+    if (this.hasPmIdTarget) {
+      this.parentForm = this.pmIdTarget.form;
+    }
     this.catchFormSubmit = true;
 
     // Initialize Stripe JS
@@ -36,22 +39,25 @@ export default class extends Controller {
 
     // Mount Stripe Elements JS to the form field
     this.stripeElement.mount(this.cardElementTarget);
+    this.initialized = true;
   }
 
   connect() {
-    this.parentForm.addEventListener("submit", this.stripeSubmit);
-    this.stripeElement.addEventListener("change", this.updateErrors);
+    document.addEventListener("stripecards:initSelectedCard", this.toggleVisibility);
+    this.parentForm?.addEventListener("submit", this.stripeSubmit);
+    this.stripeElement?.addEventListener("change", this.updateErrors);
   }
 
   disconnect() {
-    this.parentForm.removeEventListener("submit", this.stripeSubmit);
-    this.stripeElement.removeEventListener("change", this.updateErrors);
+    document.removeEventListener("stripecards:initSelectedCard", this.toggleVisibility);
+    this.parentForm?.removeEventListener("submit", this.stripeSubmit);
+    this.stripeElement?.removeEventListener("change", this.updateErrors);
   }
 
   // Before the form is submitted we send the card details directly to Stripe (via StripeJS),
   // and receive a token which represents the card object, and add that token into the form.
   stripeSubmit = (event) => {
-    if (!this.stripeSelected() || !this.catchFormSubmit) {
+    if ((!this.stripeSelected()) && !this.catchFormSubmit) {
       return;
     }
 
@@ -99,6 +105,50 @@ export default class extends Controller {
 
   // Boolean; true if Stripe is shown / currently selected
   stripeSelected() {
-    return !!this.cardElementTarget.offsetParent;
+  //  const containers = document.getElementsByClassName("paymentmethod-container");
+    const checkBoxes = Array.from(document.querySelectorAll('[id^="payment_method_"]'))
+      .filter((checkbox) => /^\d+$/.test(checkbox.id.replace('payment_method_', '')));
+    const checkedCheckbox = checkBoxes.find((checkbox) => checkbox.checked);
+    if (checkedCheckbox && checkedCheckbox.dataset.paymentmethodName === 'card') {
+      return true;
+    } else return false; 
   }
+
+  getSelectedPaymentMethodId() {
+    const checkedRadio = document.querySelector(
+      'input[name="order[payments_attributes][][payment_method_id]"]:checked'
+    );
+    return checkedRadio?.value;
+  }
+
+  toggleVisibility = (event) => {
+    const selectedId = event.detail;
+    const myId = this.getMySelectedPaymentMethodId();
+
+    if (selectedId === myId && !this.initialized ) {
+      this.initialize(); 
+    } else {
+      this.teardown();
+    }
+  };
+
+
+  teardown() {
+    if (!this.initialized) return;
+    this.stripeElement?.unmount();
+    this.parentForm?.removeEventListener("submit", this.stripeSubmit);
+    this.initialized = false;
+  }
+
+  getMySelectedPaymentMethodId() {
+    const containers = document.getElementsByClassName("paymentmethod-container");
+    for (const container of containers) {
+      if (container.dataset.paymentmethodName === 'card') {
+        return container.dataset.paymentmethodId;
+      }
+    }
+    return -1;
+  }
+
+
 }
