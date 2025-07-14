@@ -153,7 +153,7 @@ module Spree
 
       def restrict_stripe_account_change
         return unless @payment_method
-        return unless stripe_payment_method?
+        return unless stripe_payment_method? || twint_payment_method?
         return unless @payment_method.preferred_enterprise_id&.positive?
 
         @stripe_account_holder = Enterprise.find(@payment_method.preferred_enterprise_id)

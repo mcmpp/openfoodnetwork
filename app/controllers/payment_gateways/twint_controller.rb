@@ -30,7 +30,7 @@ module PaymentGateways
     end
 
     def validate_payment_intent
-      return if valid_payment_intent?
+      return if params["redirect_status"] == "succeeded" && valid_payment_intent?
 
       processing_failed
       redirect_to order_failed_route

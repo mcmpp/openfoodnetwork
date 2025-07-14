@@ -31,15 +31,6 @@ class CheckoutController < BaseController
       check_step
     end
     @payment_method = selected_payment_method&.name
-    # puts "Mikel ----------------------------------------- checkout controller params: #{params[:step]} y selected_payment_method: #{selected_payment_method.inspect}"
-    # puts "Mikel ----------------------------------------- checkout controller order: #{@order.inspect}"
-    # if selected_payment_method&.name == "twint"
-    #  @twint_client_secret = create_twint_payment_intent
-    #  @order_id = @order.number
-    #  @order_token = @order.token
-    #  puts "Mikel ----------------------------------------- @twint_client_secret: #{@twint_client_secret.inspect}"
-    # end
-
     return if available_shipping_methods.any?
 
     flash[:error] = I18n.t('checkout.errors.no_shipping_methods_available')
@@ -171,17 +162,4 @@ class CheckoutController < BaseController
 
     @order.back_to_address
   end
-
-  # This method is only used for Twint payment method
-  # def create_twint_payment_intent
-  #  Rails.logger.info( "Creating Stripe PaymentIntent... @order.adjustment_total: #{@order.inspect}")
-  #  payment_intent = Stripe::PaymentIntent.create(
-  #    amount: (@order.total * 100).to_i, # Convert to cents
-  #    currency: 'chf', # Swiss Francs for Twint
-  #    payment_method_types: ['twint'],
-  #    metadata: { order_id: @order.id }
-  #  )
-  #  Rails.logger.info( "Stripe PaymentIntent created: #{payment_intent.inspect}")
-  #  payment_intent.client_secret
-  # end
 end
